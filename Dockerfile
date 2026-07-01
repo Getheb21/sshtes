@@ -1,15 +1,17 @@
 FROM ubuntu:22.04
 
-RUN apt-get update && apt-get install -y openssh-server microsocks curl netcat
+RUN apt-get update && apt-get install -y openssh-server curl wget netcat-openbsd
 
 # Setup SSH
-RUN mkdir /var/run/sshd && \
+RUN mkdir -p /var/run/sshd && \
     echo 'root:root123' | chpasswd && \
-    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
-    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
+    echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config && \
+    echo 'PasswordAuthentication yes' >> /etc/ssh/sshd_config && \
+    echo 'Port 22' >> /etc/ssh/sshd_config && \
+    echo 'ListenAddress 0.0.0.0' >> /etc/ssh/sshd_config
 
-# Expose port
-EXPOSE 22 1080 8080
+# Buka port
+EXPOSE 22 80 443
 
-# Start SSH + SOCKS5 proxy
-CMD service ssh start && microsocks -p 1080 -u root -P root123 && tail -f /dev/null
+# Start SSH server
+CMD service ssh start && tail -f /dev/null
