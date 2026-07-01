@@ -1,22 +1,23 @@
-#!/bin/bash
+FROM ubuntu:22.04
 
-USER_NAME="${SSH_USER:-root}"
-USER_PASS="${SSH_PASSWORD:-root123}"
-PORT="${PORT:-8080}"
+ENV DEBIAN_FRONTEND=noninteractive
 
-if ! id "$USER_NAME" &>/dev/null; then
-    useradd -m -s /bin/bash "$USER_NAME"
-    usermod -aG sudo "$USER_NAME"
-fi
-echo "$USER_NAME:$USER_PASS" | chpasswd
+RUN apt-get update && apt-get install -y \
+    openssh-server \
+    nodejs \
+    npm \
+    curl \
+    sudo \
+    && rm -rf /var/lib/apt/lists/*
 
-/usr/sbin/sshd
+RUN mkdir -p /var/run/sshd /app
 
-echo "============================================"
-echo "  SSH WS TUNNEL READY"
-echo "  User: $USER_NAME"
-echo "  Pass: $USER_PASS"
-echo "  Port: $PORT"
-echo "============================================"
+COPY bridge.js /app/bridge.js
+RUN cd /app && npm init -y && npm install ws
 
-cd /app && exec node bridge.js
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+EXPOSE 8080
+
+ENTRYPOINT ["/entrypoint.sh"]
